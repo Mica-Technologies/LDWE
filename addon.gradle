@@ -4,11 +4,7 @@
 sourceSets {
     main {
         java {
-            srcDir 'src/main/java'
             srcDir 'src/legacy/java'
-        }
-        resources {
-            srcDir 'src/main/resources'
         }
     }
 }
@@ -20,9 +16,6 @@ shadowJar {
     exclude 'LICENSE*'
 }
 
-processResources {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
 
 // TOOLS FOR GITHUB ACTIONS
 task printModVersion {
