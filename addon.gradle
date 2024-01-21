@@ -1,0 +1,50 @@
+// Add any additional Gradle tasks
+
+// SET SOURCESETS
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+            srcDir 'src/legacy/java'
+        }
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+// CONFIGURE SHADOWJAR
+shadowJar {
+    exclude 'GradleStart**'
+    exclude '.cache'
+    exclude 'LICENSE*'
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// TOOLS FOR GITHUB ACTIONS
+task printModVersion {
+    doLast {
+        println project.version
+    }
+}
+
+task printArchivesBaseName {
+    doLast {
+        println project.findProperty('archivesBaseName')
+    }
+}
+
+task printModName {
+    doLast {
+        println project.findProperty('modName')
+    }
+}
+
+task printMinecraftVersion {
+    doLast {
+        println project.findProperty('minecraftVersion')
+    }
+}
