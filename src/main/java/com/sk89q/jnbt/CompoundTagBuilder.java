@@ -19,10 +19,10 @@
 
 package com.sk89q.jnbt;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Helps create compound tags.
@@ -35,7 +35,7 @@ public class CompoundTagBuilder {
      * Create a new instance.
      */
     CompoundTagBuilder() {
-        this.entries = new HashMap<String, Tag>();
+        this.entries = new HashMap<>();
     }
 
     /**
@@ -51,7 +51,7 @@ public class CompoundTagBuilder {
     /**
      * Put the given key and tag into the compound tag.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -66,7 +66,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code ByteArrayTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -78,7 +78,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code ByteTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -90,7 +90,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code DoubleTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -102,7 +102,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code FloatTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -114,7 +114,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code IntArrayTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -125,7 +125,7 @@ public class CompoundTagBuilder {
     /**
      * Put the given key and value into the compound tag as an {@code IntTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -135,9 +135,21 @@ public class CompoundTagBuilder {
 
     /**
      * Put the given key and value into the compound tag as a
+     * {@code LongArrayTag}.
+     *
+     * @param key   they key
+     * @param value the value
+     * @return this object
+     */
+    public CompoundTagBuilder putLongArray(String key, long[] value) {
+        return put(key, new LongArrayTag(value));
+    }
+
+    /**
+     * Put the given key and value into the compound tag as a
      * {@code LongTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -149,7 +161,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code ShortTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -161,7 +173,7 @@ public class CompoundTagBuilder {
      * Put the given key and value into the compound tag as a
      * {@code StringTag}.
      *
-     * @param key they key
+     * @param key   they key
      * @param value the value
      * @return this object
      */
@@ -189,7 +201,7 @@ public class CompoundTagBuilder {
      * @return the new compound tag
      */
     public CompoundTag build() {
-        return new CompoundTag(new HashMap<String, Tag>(entries));
+        return new CompoundTag(new HashMap<>(entries));
     }
 
     /**

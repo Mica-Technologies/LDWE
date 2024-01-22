@@ -19,16 +19,15 @@
 
 package com.sk89q.jnbt;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.world.storage.InvalidFormatException;
 
 import java.util.Map;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * A class which contains NBT-related utility methods.
- *
  */
 public final class NBTUtils {
 
@@ -69,9 +68,10 @@ public final class NBTUtils {
             return "TAG_String";
         } else if (clazz.equals(IntArrayTag.class)) {
             return "TAG_Int_Array";
+        } else if (clazz.equals(LongArrayTag.class)) {
+            return "TAG_Long_Array";
         } else {
-            throw new IllegalArgumentException("Invalid tag classs ("
-                    + clazz.getName() + ").");
+            throw new IllegalArgumentException("Invalid tag classs (" + clazz.getName() + ").");
         }
     }
 
@@ -107,9 +107,10 @@ public final class NBTUtils {
             return NBTConstants.TYPE_STRING;
         } else if (clazz.equals(IntArrayTag.class)) {
             return NBTConstants.TYPE_INT_ARRAY;
+        } else if (clazz.equals(LongArrayTag.class)) {
+            return NBTConstants.TYPE_LONG_ARRAY;
         } else {
-            throw new IllegalArgumentException("Invalid tag classs ("
-                    + clazz.getName() + ").");
+            throw new IllegalArgumentException("Invalid tag classs (" + clazz.getName() + ").");
         }
     }
 
@@ -122,33 +123,34 @@ public final class NBTUtils {
      */
     public static Class<? extends Tag> getTypeClass(int type) {
         switch (type) {
-        case NBTConstants.TYPE_END:
-            return EndTag.class;
-        case NBTConstants.TYPE_BYTE:
-            return ByteTag.class;
-        case NBTConstants.TYPE_SHORT:
-            return ShortTag.class;
-        case NBTConstants.TYPE_INT:
-            return IntTag.class;
-        case NBTConstants.TYPE_LONG:
-            return LongTag.class;
-        case NBTConstants.TYPE_FLOAT:
-            return FloatTag.class;
-        case NBTConstants.TYPE_DOUBLE:
-            return DoubleTag.class;
-        case NBTConstants.TYPE_BYTE_ARRAY:
-            return ByteArrayTag.class;
-        case NBTConstants.TYPE_STRING:
-            return StringTag.class;
-        case NBTConstants.TYPE_LIST:
-            return ListTag.class;
-        case NBTConstants.TYPE_COMPOUND:
-            return CompoundTag.class;
-        case NBTConstants.TYPE_INT_ARRAY:
-            return IntArrayTag.class;
-        default:
-            throw new IllegalArgumentException("Invalid tag type : " + type
-                    + ".");
+            case NBTConstants.TYPE_END:
+                return EndTag.class;
+            case NBTConstants.TYPE_BYTE:
+                return ByteTag.class;
+            case NBTConstants.TYPE_SHORT:
+                return ShortTag.class;
+            case NBTConstants.TYPE_INT:
+                return IntTag.class;
+            case NBTConstants.TYPE_LONG:
+                return LongTag.class;
+            case NBTConstants.TYPE_FLOAT:
+                return FloatTag.class;
+            case NBTConstants.TYPE_DOUBLE:
+                return DoubleTag.class;
+            case NBTConstants.TYPE_BYTE_ARRAY:
+                return ByteArrayTag.class;
+            case NBTConstants.TYPE_STRING:
+                return StringTag.class;
+            case NBTConstants.TYPE_LIST:
+                return ListTag.class;
+            case NBTConstants.TYPE_COMPOUND:
+                return CompoundTag.class;
+            case NBTConstants.TYPE_INT_ARRAY:
+                return IntArrayTag.class;
+            case NBTConstants.TYPE_LONG_ARRAY:
+                return LongArrayTag.class;
+            default:
+                throw new IllegalArgumentException("Invalid tag type : " + type + ".");
         }
     }
 
@@ -169,8 +171,8 @@ public final class NBTUtils {
     /**
      * Get child tag of a NBT structure.
      *
-     * @param items the map to read from
-     * @param key the key to look for
+     * @param items    the map to read from
+     * @param key      the key to look for
      * @param expected the expected NBT class type
      * @return child tag
      * @throws InvalidFormatException

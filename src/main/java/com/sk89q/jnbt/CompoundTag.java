@@ -297,10 +297,10 @@ public final class CompoundTag extends Tag {
      * a list but the list of of a different type, then an empty
      * list will also be returned.</p>
      *
-     * @param key the key
+     * @param key      the key
      * @param listType the class of the contained type
+     * @param <T>      the type of list
      * @return a list of tags
-     * @param <T> the type of list
      */
     @SuppressWarnings("unchecked")
     public <T extends Tag> List<T> getList(String key, Class<T> listType) {
@@ -314,6 +314,24 @@ public final class CompoundTag extends Tag {
             }
         } else {
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Get a {@code long[]} named with the given key.
+     *
+     * <p>If the key does not exist or its value is not an long array tag,
+     * then an empty array will be returned.</p>
+     *
+     * @param key the key
+     * @return an int array
+     */
+    public long[] getLongArray(String key) {
+        Tag tag = value.get(key);
+        if (tag instanceof LongArrayTag) {
+            return ((LongArrayTag) tag).getValue();
+        } else {
+            return new long[0];
         }
     }
 

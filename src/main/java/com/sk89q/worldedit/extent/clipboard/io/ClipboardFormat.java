@@ -75,13 +75,13 @@ public enum ClipboardFormat {
                 str.readFully(nameBytes);
                 String name = new String(nameBytes, NBTConstants.CHARSET);
                 return name.equals("Schematic");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 return false;
             } finally {
                 if (str != null) {
                     try {
                         str.close();
-                    } catch (IOException ignored) {
+                    } catch (Exception ignored) {
                     }
                 }
             }
