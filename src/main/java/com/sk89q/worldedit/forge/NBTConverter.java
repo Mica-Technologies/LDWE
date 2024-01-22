@@ -21,6 +21,7 @@ package com.sk89q.worldedit.forge;
 
 import com.sk89q.jnbt.*;
 import net.minecraft.nbt.*;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -54,6 +55,9 @@ final class NBTConverter {
 
         } else if (tag instanceof ByteArrayTag) {
             return toNative((ByteArrayTag) tag);
+
+        } else if (tag instanceof LongArrayTag) {
+            return toNative((LongArrayTag) tag);
 
         } else if (tag instanceof CompoundTag) {
             return toNative((CompoundTag) tag);
@@ -108,6 +112,11 @@ final class NBTConverter {
         return new NBTTagByteArray(Arrays.copyOf(value, value.length));
     }
 
+    public static NBTTagLongArray toNative(LongArrayTag tag) {
+        long[] value = tag.getValue();
+        return new NBTTagLongArray(Arrays.copyOf(value, value.length));
+    }
+
     public static NBTTagCompound toNative(CompoundTag tag) {
         NBTTagCompound compound = new NBTTagCompound();
         for (Entry<String, Tag> child : tag.getValue().entrySet()) {
@@ -152,6 +161,9 @@ final class NBTConverter {
 
         } else if (other instanceof NBTTagByteArray) {
             return fromNative((NBTTagByteArray) other);
+
+        } else if (other instanceof NBTTagLongArray) {
+            return fromNative((NBTTagLongArray) other);
 
         } else if (other instanceof NBTTagCompound) {
             return fromNative((NBTTagCompound) other);
@@ -210,6 +222,12 @@ final class NBTConverter {
     public static ByteArrayTag fromNative(NBTTagByteArray other) {
         byte[] value = other.getByteArray();
         return new ByteArrayTag(Arrays.copyOf(value, value.length));
+    }
+
+    public static LongArrayTag fromNative(NBTTagLongArray other) {
+        long[] value = ObfuscationReflectionHelper.getPrivateValue(NBTTagLongArray.class,
+                other, "field_193587_b");
+        return new LongArrayTag(Arrays.copyOf(value, value.length));
     }
 
     public static CompoundTag fromNative(NBTTagCompound other) {
