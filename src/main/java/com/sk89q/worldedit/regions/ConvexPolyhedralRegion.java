@@ -68,11 +68,6 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
     private Vector centerAccum = Vector.ZERO;
 
     /**
-     * The last triangle that caused a {@link #contains(Vector)} to classify a point as "outside". Used for optimization.
-     */
-    private Triangle lastTriangle;
-
-    /**
      * Constructs an empty mesh, containing no vertices or triangles.
      *
      * @param world the world
@@ -103,7 +98,6 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
         minimumPoint = region.minimumPoint;
         maximumPoint = region.maximumPoint;
         centerAccum = region.centerAccum;
-        lastTriangle = region.lastTriangle;
     }
 
     /**
@@ -117,7 +111,6 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
         minimumPoint = null;
         maximumPoint = null;
         centerAccum = Vector.ZERO;
-        lastTriangle = null;
     }
 
     /**
@@ -129,8 +122,6 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
     public boolean addVertex(Vector vertex) {
         checkNotNull(vertex);
 
-        lastTriangle = null; // Probably not necessary
-
         if (vertices.contains(vertex)) {
             return false;
         }
@@ -140,7 +131,7 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
                 return false;
             }
 
-            if (containsRaw(vertex)) {
+            if (!seenByAnyFace(vertex)) {
                 return vertexBacklog.add(vertex);
             }
         }
@@ -265,7 +256,6 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
         minimumPoint = change.add(minimumPoint);
         maximumPoint = change.add(maximumPoint);
         centerAccum = change.multiply(vertices.size()).add(centerAccum);
-        lastTriangle = null;
     }
 
     private static void shiftCollection(Collection<Vector> collection, Vector change) {
@@ -299,23 +289,42 @@ public class ConvexPolyhedralRegion extends AbstractRegion {
         return containsRaw(position);
     }
 
+    /**
+     * Tests the point against every face of the hull, without the bounding box check.
+     *
+     * <p>No state is kept between calls. Remembering the last face that rejected a
+     * point went wrong in two ways: {@link #addVertex(Vector)} could leave the
+     * remembered face pointing at a triangle it had since removed from the hull, so
+     * the first pass over a fresh selection rejected points inside it, and the cache
+     * was written from {@code contains()}, which is not safe when a region is used as
+     * a mask from several threads. A hull has few faces, so testing them all costs
+     * little.</p>
+     *
+     * <p>{@link Triangle#outside(Vector)} is exact for block coordinates, so a block
+     * lying on a slanted face is kept instead of being dropped by rounding.</p>
+     */
     private boolean containsRaw(Vector pt) {
-        if (lastTriangle != null && lastTriangle.above(pt)) {
-            return false;
-        }
-
         for (Triangle triangle : triangles) {
-            if (lastTriangle == triangle) {
-                continue;
-            }
-
-            if (triangle.above(pt)) {
-                lastTriangle = triangle;
+            if (triangle.outside(pt)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Returns whether any face of the hull faces the given point, using the same
+     * plane test that {@link #addVertex(Vector)} uses to decide which faces to replace.
+     */
+    private boolean seenByAnyFace(Vector pt) {
+        for (Triangle triangle : triangles) {
+            if (triangle.above(pt)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public Collection<Vector> getVertices() {
