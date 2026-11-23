@@ -29,6 +29,8 @@ public class Triangle {
     private final Vector[] vertices;
     private final Vector normal;
     private final double b;
+    /** Normal before normalisation; exact when the vertices are whole numbers. */
+    private final Vector rawNormal;
 
     /**
      * Constructs a triangle with the given vertices (counter-clockwise)
@@ -44,8 +46,25 @@ public class Triangle {
 
         vertices = new Vector[] { v0, v1, v2 };
 
-        this.normal = v1.subtract(v0).cross(v2.subtract(v0)).normalize();
+        this.rawNormal = v1.subtract(v0).cross(v2.subtract(v0));
+        this.normal = rawNormal.normalize();
         this.b = Math.max(Math.max(normal.dot(v0), normal.dot(v1)), normal.dot(v2));
+    }
+
+    /**
+     * Returns whether the given point lies strictly on the outer side of the
+     * triangle's plane, with a point on the plane counting as inside.
+     *
+     * <p>Unlike {@link #above(Vector)}, this does not use the normalised normal,
+     * so for whole-number vertices and points the result is exact: a block on a
+     * slanted face is never rejected by rounding.</p>
+     *
+     * @param pt the point to test
+     * @return true if the point is outside
+     */
+    public boolean outside(Vector pt) {
+        checkNotNull(pt);
+        return rawNormal.dot(pt.subtract(vertices[0])) > 0;
     }
 
     /**

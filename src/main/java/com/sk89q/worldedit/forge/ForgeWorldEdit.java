@@ -33,10 +33,13 @@ import com.sk89q.worldedit.forge.net.LeftClickAirEventMessage;
 import com.sk89q.worldedit.internal.LocalWorldAdapter;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumHand;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
@@ -55,6 +58,7 @@ import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -79,6 +83,13 @@ public class ForgeWorldEdit {
     private ForgePlatform platform;
     private ForgeConfiguration config;
     private File workingDir;
+
+    /**
+     * The last right click handled for each online player, used to recognise
+     * the events the client sends again for that same click. An entry is
+     * replaced by the player's next click and removed when they log out.
+     */
+    private final Map<UUID, RightClick> lastRightClicks = new HashMap<>();
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -127,6 +138,8 @@ public class ForgeWorldEdit {
     @EventHandler
     public void serverStopping(FMLServerStoppingEvent event) {
         WorldEdit.getInstance().getPlatformManager().unregister(platform);
+        // The tick counter starts again from zero on the next server.
+        lastRightClicks.clear();
     }
 
     @EventHandler
@@ -173,8 +186,45 @@ public class ForgeWorldEdit {
             return;
         }
 
+        // One right click makes the vanilla client try every hand in turn
+        // (Minecraft.rightClickMouse): for each hand it sends a use-item-on-block
+        // packet when aiming at a block, then a use-item packet when that hand
+        // holds something, and it only stops early when the client itself sees
+        // the click succeed, which it does not for WorldEdit tools. The server
+        // turns each packet into its own Forge event, so one click arrives as
+        // RightClickBlock(main), RightClickItem(main), RightClickBlock(off) and,
+        // with an item in the off hand, RightClickItem(off). WorldEdit always
+        // takes the tool from the main hand, so only the first of these is a
+        // real click and the rest would run the same tool again.
+        boolean isRightClickBlock = event instanceof PlayerInteractEvent.RightClickBlock;
+        boolean isRightClickItem = event instanceof PlayerInteractEvent.RightClickItem;
+        EntityPlayerMP playerMP = (EntityPlayerMP) event.getEntityPlayer();
+        int tick = playerMP.server.getTickCounter();
+        if (isRightClickBlock || isRightClickItem) {
+            // The packets of one click are handled in the same server tick. A
+            // click at air or at a block out of reach sends no use-item-on-block
+            // packet, so its use-item event finds nothing pending and is handled.
+            RightClick last = lastRightClicks.get(playerMP.getUniqueID());
+            boolean sameTick = last != null && last.tick == tick;
+            boolean offHand = event.getHand() == EnumHand.OFF_HAND;
+            if (offHand || (isRightClickItem && sameTick && last.useItemPending)) {
+                if (sameTick) {
+                    if (isRightClickItem && !offHand) {
+                        last.useItemPending = false;
+                    }
+                    // Cancel the repeat whenever WorldEdit took the first event,
+                    // as the repeat would otherwise go on to vanilla and, for
+                    // example, place the off-hand block or use the held item.
+                    if (isRightClickBlock ? last.cancelled : last.rightClickHandled) {
+                        event.setCanceled(true);
+                    }
+                }
+                return;
+            }
+        }
+
         WorldEdit we = WorldEdit.getInstance();
-        ForgePlayer player = wrap((EntityPlayerMP) event.getEntityPlayer());
+        ForgePlayer player = wrap(playerMP);
         ForgeWorld world = getWorld(event.getEntityPlayer().world);
 
         if (event instanceof PlayerInteractEvent.LeftClickEmpty) {
@@ -199,17 +249,50 @@ public class ForgeWorldEdit {
             WorldVector pos = new WorldVector(LocalWorldAdapter.adapt(world),
                     event.getPos().getX(), event.getPos().getY(), event.getPos().getZ());
 
-            if (we.handleBlockRightClick(player, pos)) {
+            boolean blockHandled = we.handleBlockRightClick(player, pos);
+            if (blockHandled) {
                 event.setCanceled(true);
             }
 
-            if (we.handleRightClick(player)) {
+            boolean rightClickHandled = we.handleRightClick(player);
+            if (rightClickHandled) {
                 event.setCanceled(true);
             }
+
+            lastRightClicks.put(playerMP.getUniqueID(),
+                    new RightClick(tick, blockHandled || rightClickHandled, rightClickHandled, true));
         } else if (event instanceof PlayerInteractEvent.RightClickItem) {
-            if (we.handleRightClick(player)) {
+            boolean rightClickHandled = we.handleRightClick(player);
+            if (rightClickHandled) {
                 event.setCanceled(true);
             }
+
+            lastRightClicks.put(playerMP.getUniqueID(),
+                    new RightClick(tick, rightClickHandled, rightClickHandled, false));
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        lastRightClicks.remove(event.player.getUniqueID());
+    }
+
+    /**
+     * What WorldEdit did with the first event of a player's right click, so
+     * the events the client sends again for that click can be answered the
+     * same way without running the tool again.
+     */
+    private static final class RightClick {
+        final int tick;
+        final boolean cancelled;
+        final boolean rightClickHandled;
+        boolean useItemPending;
+
+        RightClick(int tick, boolean cancelled, boolean rightClickHandled, boolean useItemPending) {
+            this.tick = tick;
+            this.cancelled = cancelled;
+            this.rightClickHandled = rightClickHandled;
+            this.useItemPending = useItemPending;
         }
     }
 

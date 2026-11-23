@@ -81,3 +81,6 @@ local.properties
 run/
 
 logs/
+
+# written by .github/scripts/server-smoke-test.sh when run locally
+server-smoke.log
